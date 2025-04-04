@@ -45,4 +45,4 @@ def predict_report_proba(data: ReportData):
     # Konversi hasil probabilitas ke bentuk JSON
     result = {target_labels[i]: round(y_proba[0][i], 4) for i in range(len(target_labels))}
 
-    return {"probabilities": result}
+    return {"probabilities": result}  
