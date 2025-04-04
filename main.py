@@ -19,6 +19,27 @@ def clean_text(text: str) -> str:
     text = text.lower()  # Convert to lowercase
     return text
 
+def preprocess_input(data: dict) -> pd.DataFrame:
+    """Preprocess input data to match the training pipeline."""
+    # Convert 'createdAt' to datetime
+    data['createdAt'] = pd.to_datetime(data['createdAt'], format='ISO8601')
+
+    # Extract useful features from 'createdAt'
+    data['year'] = data['createdAt'].year
+    data['month'] = data['createdAt'].month
+    data['day'] = data['createdAt'].day
+
+    # Clean the 'content' column
+    data['content'] = clean_text(data['content'])
+
+    # Create a DataFrame
+    input_df = pd.DataFrame([data])
+
+    # Drop unnecessary columns to match the training pipeline
+    input_df = input_df.drop(['createdAt'], axis=1)
+
+    return input_df
+
 # === 4. Define Input Schema ===
 class ReportData(BaseModel):
     content: str
@@ -29,15 +50,10 @@ class ReportData(BaseModel):
 @app.post("/predict_proba")
 def predict_report_proba(data: ReportData):
     # Preprocessing input
-    input_data = {
-        "content": clean_text(data.content),
-        "category_name": data.category_name,
-        "createdAt": data.createdAt
-    }
-    input_df = pd.DataFrame([input_data])
+    input_data = preprocess_input(data.dict())
 
     # Lakukan prediksi probabilitas
-    y_proba = model.predict_proba(input_df)
+    y_proba = model.predict_proba(input_data)
 
     # Label target yang digunakan saat training
     target_labels = model.classes_
@@ -45,4 +61,4 @@ def predict_report_proba(data: ReportData):
     # Konversi hasil probabilitas ke bentuk JSON
     result = {target_labels[i]: round(y_proba[0][i], 4) for i in range(len(target_labels))}
 
-    return {"probabilities": result}  
+    return {"probabilities": result}
