@@ -9,10 +9,10 @@ with open("catboost_model.pkl", "rb") as f:
     model = pickle.load(f)
 
 # === 2. Inisialisasi FastAPI ===
-app = FastAPI(title="Reports Classifier API", version="1.0")
+app = FastAPI(title="JAKI Classifier API", version="1.0")
 
 # === 3. Preprocessing Function ===
-def clean_text(text):
+def clean_text(text: str) -> str:
     """Clean the text data by removing newlines, punctuation, and converting to lowercase."""
     text = re.sub(r'\n', ' ', text)  # Replace newlines with spaces
     text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
@@ -20,14 +20,14 @@ def clean_text(text):
     return text
 
 # === 4. Define Input Schema ===
-class PatientData(BaseModel):
+class ReportData(BaseModel):
     content: str
     category_name: str
-    createdAt: str  
+    createdAt: str  # ISO8601 datetime format
 
 # === 5. Endpoint untuk Prediksi Probabilitas ===
 @app.post("/predict_proba")
-def predict_disease_proba(data: PatientData):
+def predict_report_proba(data: ReportData):
     # Preprocessing input
     input_data = {
         "content": clean_text(data.content),
