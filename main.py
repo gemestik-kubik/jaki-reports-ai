@@ -4,8 +4,8 @@ import re
 from pydantic import BaseModel
 import pandas as pd
 
-# === 1. Load Model CatBoostClassifier ===
-with open("catboost_model.pkl", "rb") as f:
+# === 1. Load Model Logistic Regression ===
+with open("logreg_model.pkl", "rb") as f:
     model = pickle.load(f)
 
 # === 2. Inisialisasi FastAPI ===
@@ -19,41 +19,20 @@ def clean_text(text: str) -> str:
     text = text.lower()  # Convert to lowercase
     return text
 
-def preprocess_input(data: dict) -> pd.DataFrame:
-    """Preprocess input data to match the training pipeline."""
-    # Convert 'createdAt' to datetime
-    data['createdAt'] = pd.to_datetime(data['createdAt'], format='ISO8601')
-
-    # Extract useful features from 'createdAt'
-    data['year'] = data['createdAt'].year
-    data['month'] = data['createdAt'].month
-    data['day'] = data['createdAt'].day
-
-    # Clean the 'content' column
-    data['content'] = clean_text(data['content'])
-
-    # Create a DataFrame
-    input_df = pd.DataFrame([data])
-
-    # Drop unnecessary columns to match the training pipeline
-    input_df = input_df.drop(['createdAt'], axis=1)
-
-    return input_df
-
 # === 4. Define Input Schema ===
 class ReportData(BaseModel):
     content: str
-    category_name: str
+    category_name: str  # This is unused but kept for compatibility
     createdAt: str  # ISO8601 datetime format
 
-# === 5. Endpoint untuk Prediksi Probabilitas ===
+# === 5. Endpoint untuk Prediksi ===
 @app.post("/predict_proba")
 def predict_report_proba(data: ReportData):
     # Preprocessing input
-    input_data = preprocess_input(data.dict())
+    cleaned_content = clean_text(data.content)
 
-    # Lakukan prediksi probabilitas
-    y_proba = model.predict_proba(input_data)
+    # Predict probabilities
+    y_proba = model.predict_proba([cleaned_content])
 
     # Label target yang digunakan saat training
     target_labels = model.classes_

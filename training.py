@@ -1,7 +1,9 @@
 import pandas as pd
-from catboost import CatBoostClassifier
 import re
 import pickle
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
 
 def clean_text(text):
     """Clean the text data by removing newlines, punctuation, and converting to lowercase."""
@@ -27,28 +29,22 @@ def main():
     df['content'] = df['content'].apply(clean_text)
 
     # Drop unnecessary columns
-    X = df.drop(['id', 'code', 'createdAt', 'zone_name', 'status'], axis=1)  # Drop irrelevant columns
+    X = df['content']  # Use only the 'content' column for TF-IDF
     y = df['zone_name']  # Target label
 
-    # Identify categorical and text features
-    categorical_features = ['category_name']
-    text_features = ['content']
+    # Create a pipeline with TF-IDF and Logistic Regression
+    pipeline = Pipeline([
+        ('tfidf', TfidfVectorizer(max_features=5000)),  # Limit to 5000 features
+        ('logreg', LogisticRegression(max_iter=1000))
+    ])
 
-    # Initialize the CatBoost classifier
-    model = CatBoostClassifier(
-        iterations=1000,
-        cat_features=categorical_features,
-        text_features=text_features,
-        verbose=100
-    )
-
-    # Train the model on the entire dataset
-    model.fit(X, y)
+    # Train the model
+    pipeline.fit(X, y)
 
     # Save the trained model to a .pkl file
-    with open('catboost_model.pkl', 'wb') as f:
-        pickle.dump(model, f)
-    print("Model saved as 'catboost_model.pkl'")
+    with open('logreg_model.pkl', 'wb') as f:
+        pickle.dump(pipeline, f)
+    print("Model saved as 'logreg_model.pkl'")
 
 if __name__ == "__main__":
     main()
